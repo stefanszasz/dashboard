@@ -23,6 +23,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 )
 
+var SecuredNamespace = authApi.EncryptionKeyHolderNamespace
+
 // Implements AuthManager interface
 type authManager struct {
 	tokenManager        authApi.TokenManager

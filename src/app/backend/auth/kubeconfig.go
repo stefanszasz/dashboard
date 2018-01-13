@@ -18,15 +18,18 @@ import (
 	"errors"
 
 	authApi "github.com/kubernetes/dashboard/src/app/backend/auth/api"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/tools/clientcmd/api"
+	"log"
 )
 
 // Below structures represent structure of kubeconfig file. They only contain fields required to gather data needed
 // to log in user. It should support same auth options as defined in auth/api/types.go file. Currently: basic, token.
 
 type contextInfo struct {
-	User string `yaml:"user"`
+	User      string `yaml:"user"`
+	Namespace string `yaml:"namespace"`
+	Cluster   string `yaml:"cluster"`
 }
 
 type contextEntry struct {
@@ -45,7 +48,7 @@ type userInfo struct {
 	Password string `yaml:"password"`
 }
 
-type kubeConfig struct {
+type KubeConfig struct {
 	Contexts       []contextEntry `yaml:"contexts"`
 	CurrentContext string         `yaml:"current-context"`
 	Users          []userEntry    `yaml:"users"`
@@ -72,9 +75,11 @@ func (self *kubeConfigAuthenticator) GetAuthInfo() (api.AuthInfo, error) {
 	return self.getAuthInfo(info)
 }
 
-// Parses kubeconfig file and returns kubeConfig object.
-func (self *kubeConfigAuthenticator) parseKubeConfig(bytes []byte) (*kubeConfig, error) {
-	kubeConfig := new(kubeConfig)
+// Parses kubeconfig file and returns KubeConfig object.
+func (self *kubeConfigAuthenticator) parseKubeConfig(bytes []byte) (*KubeConfig, error) {
+	log.Println("Parsing kubeconfig...")
+
+	kubeConfig := new(KubeConfig)
 	if err := yaml.Unmarshal(bytes, kubeConfig); err != nil {
 		return nil, err
 	}
@@ -83,7 +88,7 @@ func (self *kubeConfigAuthenticator) parseKubeConfig(bytes []byte) (*kubeConfig,
 }
 
 // Returns user info based on defined current context. In case it is not found error is returned.
-func (self *kubeConfigAuthenticator) getCurrentUserInfo(config kubeConfig) (userInfo, error) {
+func (self *kubeConfigAuthenticator) getCurrentUserInfo(config KubeConfig) (userInfo, error) {
 	userName := ""
 	for _, context := range config.Contexts {
 		if context.Name == config.CurrentContext {

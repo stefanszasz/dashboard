@@ -20,6 +20,7 @@ import (
 	"log"
 	"sync"
 
+	"github.com/kubernetes/dashboard/src/app/backend/auth"
 	authApi "github.com/kubernetes/dashboard/src/app/backend/auth/api"
 	syncApi "github.com/kubernetes/dashboard/src/app/backend/sync/api"
 	jose "gopkg.in/square/go-jose.v2"
@@ -126,7 +127,8 @@ func (self *rsaKeyHolder) init() {
 
 	// Try to save generated key in a secret
 	log.Printf("Storing encryption key in a secret")
-	err := self.synchronizer.Create(self.getEncryptionKeyHolder())
+	encHolder := self.getEncryptionKeyHolder()
+	err := self.synchronizer.Create(encHolder)
 	if err != nil && !k8sErrors.IsAlreadyExists(err) {
 		panic(err)
 	}
@@ -136,7 +138,7 @@ func (self *rsaKeyHolder) getEncryptionKeyHolder() runtime.Object {
 	priv, pub := ExportRSAKeyOrDie(self.Key())
 	return &v1.Secret{
 		ObjectMeta: metaV1.ObjectMeta{
-			Namespace: authApi.EncryptionKeyHolderNamespace,
+			Namespace: auth.SecuredNamespace,
 			Name:      authApi.EncryptionKeyHolderName,
 		},
 

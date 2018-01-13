@@ -80,11 +80,14 @@ func main() {
 
 	// Initializes dashboard arguments holder so we can read them in other packages
 	initArgHolder()
+	auth.InitSecurityNamespace()
 
 	if args.Holder.GetApiServerHost() != "" {
 		log.Printf("Using apiserver-host location: %s", args.Holder.GetApiServerHost())
 	}
 	if args.Holder.GetKubeConfigFile() != "" {
+		file := args.Holder.GetKubeConfigFile()
+		auth.ParseKubeConfigContent(file)
 		log.Printf("Using kubeconfig file: %s", args.Holder.GetKubeConfigFile())
 	}
 
@@ -157,7 +160,9 @@ func initAuthManager(clientManager clientapi.ClientManager) authApi.AuthManager 
 
 	// Init default encryption key synchronizer
 	synchronizerManager := sync.NewSynchronizerManager(insecureClient)
-	keySynchronizer := synchronizerManager.Secret(authApi.EncryptionKeyHolderNamespace, authApi.EncryptionKeyHolderName)
+
+	log.Printf("Starting sync manager with '%s' namespace... \n", auth.SecuredNamespace)
+	keySynchronizer := synchronizerManager.Secret(auth.SecuredNamespace, authApi.EncryptionKeyHolderName)
 
 	// Register synchronizer. Overwatch will be responsible for restarting it in case of error.
 	sync.Overwatch.RegisterSynchronizer(keySynchronizer, sync.AlwaysRestart)
