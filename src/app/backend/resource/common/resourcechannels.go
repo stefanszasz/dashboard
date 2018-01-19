@@ -359,7 +359,9 @@ func GetPodListChannelWithOptions(client client.Interface, nsQuery *NamespaceQue
 		var filteredItems []v1.Pod
 		for _, item := range list.Items {
 			if nsQuery.Matches(item.ObjectMeta.Namespace) {
-				filteredItems = append(filteredItems, item)
+				if item.Status.Phase != "Succeeded" {
+					filteredItems = append(filteredItems, item)
+				}
 			}
 		}
 		list.Items = filteredItems
